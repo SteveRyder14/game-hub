@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TicTacToe - Next-Gen Grid Battler</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Russo+One&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        /* Core Reset & Theme Palette */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            font-family: 'Open Sans', sans-serif;
+            background-color: #192a32;
+            color: #a8bec9;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* --- THE HEADER --- */
+        .top-bar {
+            background-color: #92cbf5;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 30px;
+            flex-wrap: wrap;
+            gap: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+        }
+
+        .logo {
+            font-family: 'Russo One', sans-serif;
+            font-size: 2.8rem;
+            color: white;
+            text-shadow: 3px 3px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+            letter-spacing: 3px;
+        }
+
+        /* Social Icons */
+        .social-icons { display: flex; align-items: center; gap: 8px; }
+        .contact-label { font-family: 'Russo One', sans-serif; color: white; margin-right: 10px; font-size: 1.1rem; }
+        .social-icons a {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            color: white;
+            font-size: 1.2rem;
+            text-decoration: none;
+            border-radius: 6px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            transition: transform 0.25s ease, filter 0.25s ease;
+        }
+        .social-icons a:hover { filter: brightness(1.2); transform: translateY(-3px); }
+        .fb { background-color: #3b5998; }
+        .ig { background-color: #517fa4; }
+        .dc { background-color: #7289da; }
+
+        /* --- NAVIGATION --- */
+        .nav-bar {
+            display: flex;
+            background-color: #ffffff;
+            border-bottom: 5px solid #1f3641;
+            max-width: 950px;
+            margin: 20px auto 0 auto;
+            border-radius: 8px 8px 0 0;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .nav-item {
+            flex: 1;
+            text-align: center;
+            padding: 18px;
+            font-family: 'Russo One', sans-serif;
+            font-size: 1.05rem;
+            color: #1f3641;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-right: 1px solid #e2e8f0;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        .nav-item:last-child { border-right: none; }
+        .nav-item:hover { background-color: #f8fafc; color: #31c4be; }
+        
+        .nav-item.active { background-color: #1f3641; color: #31c4be; }
+        .nav-play { background-color: #f2b237; color: #192a32; font-weight: bold; }
+        .nav-play:hover { background-color: #ffc95e; color: #192a32; }
+        .nav-play.active { background-color: #31c4be; color: #192a32; }
+
+        /* --- CONTENT --- */
+        main {
+            max-width: 950px;
+            margin: 0 auto 50px auto;
+            padding: 40px;
+            background: #1f3641;
+            border-radius: 0 0 12px 12px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+            border: 1px solid #2a4350;
+            border-top: none;
+        }
+
+        /* Fluid Layer Animations */
+        .content-section { display: none; opacity: 0; }
+        .content-section.active { display: block; animation: elegantFadeIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+
+        h2 { font-family: 'Russo One', sans-serif; color: #ffffff; margin-bottom: 25px; font-size: 2.4rem; display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+        .x-color { color: #31c4be; } .o-color { color: #f2b237; }
+        h3 { font-family: 'Russo One', sans-serif; color: #31c4be; margin: 35px 0 15px 0; font-size: 1.5rem; }
+        p { line-height: 1.8; margin-bottom: 25px; font-size: 1.15rem; color: #a8bec9; }
+        
+        /* Features/Rules Layouts */
+        .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 25px; margin: 30px 0; }
+        .feature-card { background: #192a32; padding: 25px; border-radius: 12px; border-top: 5px solid #f2b237; box-shadow: 0 6px 12px rgba(0,0,0,0.15); transition: transform 0.3s ease, box-shadow 0.3s ease; }
+        .feature-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
+        
+        .rule-box { background: #192a32; padding: 30px; border-radius: 12px; border-left: 6px solid #31c4be; margin: 30px 0; }
+        .rule-box ol li { margin-left: 20px; margin-bottom: 16px; line-height: 1.7; font-size: 1.1rem; color: #a8bec9; }
+        .rule-box ol li::marker { font-weight: bold; color: #31c4be; }
+
+        /* Graphics Media Elements */
+        .game-image { width: 100%; max-width: 800px; height: auto; border-radius: 12px; border: 3px solid #2a4350; box-shadow: 0 10px 25px rgba(0,0,0,0.4); margin: 25px auto; display: block; transition: transform 0.4s ease, border-color 0.4s ease; }
+        .game-image:hover { transform: scale(1.02); border-color: #31c4be; }
+
+        /* Distribution Gateways */
+        .download-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 30px; }
+        .dl-card { background: #192a32; padding: 30px; border-radius: 12px; border: 2px solid #2a4350; text-align: center; display: flex; flex-direction: column; justify-content: center; }
+        .dl-card h4 { color: #fff; margin-bottom: 20px; font-size: 1.4rem; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .dl-card.coming-soon { opacity: 0.7; border-style: dashed; }
+        
+        .download-btn { display: block; background-color: #31c4be; color: #1f3641; padding: 15px 20px; font-family: 'Russo One', sans-serif; text-decoration: none; border-radius: 6px; margin-top: 15px; transition: background-color 0.3s ease, transform 0.2s ease; font-size: 1.05rem; }
+        .download-btn:active { transform: scale(0.98); } 
+        .download-btn:hover { background-color: #ffffff; }
+        .beta-btn { background-color: #f2b237; }
+
+        /* --- CRYPTO GRID INTERFACE (TRY NOW COMPARTMENT) --- */
+        .web-player-container { background-color: #192a32; padding: 30px; border-radius: 12px; box-shadow: inset 0 5px 15px rgba(0,0,0,0.3); max-width: 500px; margin: 0 auto; text-align: center; }
+        .web-status { font-family: 'Russo One', sans-serif; font-size: 1.5rem; color: #a8bec9; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1px; }
+        .web-board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+        .web-cell { background-color: #1f3641; border: none; border-radius: 10px; aspect-ratio: 1; font-family: 'Russo One', sans-serif; font-size: 4rem; color: #fff; cursor: pointer; transition: background-color 0.2s, transform 0.1s; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px rgba(0,0,0,0.15); }
+        .web-cell:hover { background-color: #2a4350; }
+        .web-cell:active { transform: scale(0.95); }
+        .web-cell.x-mark { color: #31c4be; }
+        .web-cell.o-mark { color: #f2b237; }
+        .web-cell.win-mark { background-color: #2e4d5c; border: 2px solid #31c4be; }
+        .web-controls { display: flex; justify-content: center; gap: 15px; }
+        .web-btn { background-color: #a8bec9; color: #192a32; border: none; padding: 12px 24px; font-family: 'Russo One', sans-serif; font-size: 1.1rem; border-radius: 6px; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
+        .web-btn:hover { background-color: #ffffff; }
+
+        @keyframes elegantFadeIn { 
+            0% { opacity: 0; transform: translateY(15px); } 
+            100% { opacity: 1; transform: translateY(0); } 
+        }
+
+        /* --- MOBILE PORTRAIT BREAKPOINTS --- */
+        @media (max-width: 768px) {
+            .top-bar { flex-direction: column; text-align: center; padding: 15px 20px; }
+            .logo { font-size: 2.2rem; }
+            .social-icons { margin-top: 10px; }
+            
+            main { padding: 30px 20px; margin: 0 10px 30px 10px; border-radius: 12px; }
+            .nav-bar { margin: 15px 10px 0 10px; border-radius: 8px; flex-wrap: wrap; }
+            .nav-item { padding: 12px 5px; font-size: 0.9rem; flex: 1 1 45%; }
+            .nav-play { flex: 1 1 100%; border-top: 1px solid #e2e8f0; } /* Spans layout base cleanly on touchdevices */
+            
+            h2 { font-size: 1.8rem; justify-content: center; text-align: center; }
+            h3 { font-size: 1.3rem; text-align: center; }
+            p { font-size: 1.05rem; }
+            
+            .features-grid { grid-template-columns: 1fr; }
+            .web-cell { font-size: 3rem; }
+        }
+
+        @media (max-width: 480px) {
+            .logo { font-size: 1.8rem; }
+            .contact-label { font-size: 0.95rem; }
+            .social-icons a { width: 35px; height: 35px; font-size: 1rem; }
+            
+            .nav-item { font-size: 0.78rem; padding: 10px 2px; letter-spacing: 0px; }
+            
+            main { padding: 25px 15px; }
+            h2 { font-size: 1.4rem; }
+            
+            .rule-box { padding: 20px 15px; }
+            .rule-box ol li { font-size: 1rem; margin-left: 15px; }
+            
+            .dl-card { padding: 20px; }
+            .download-btn { padding: 12px 15px; font-size: 0.95rem; }
+            
+            .web-player-container { padding: 15px; }
+            .web-cell { font-size: 2.3rem; border-radius: 6px; gap: 8px; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="top-bar">
+            <div class="logo">TICTACTOE</div>
+            
+            <div class="social-icons">
+                <span class="contact-label">Contact:</span>
+                <a href="https://www.facebook.com/profile.php?id=61586252369183" target="_blank" class="fb"><i class="fa-brands fa-facebook-f"></i></a>
+                <a href="https://www.instagram.com/steveryder14?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==" target="_blank" class="ig"><i class="fa-brands fa-instagram"></i></a>
+                <a href="https://discord.com/users/1295468302537195520" target="_blank" class="dc"><i class="fa-brands fa-discord"></i></a>
+            </div>
+        </div>
+
+        <div class="nav-bar">
+            <div class="nav-item active" onclick="openTab('game', this)">GAME</div>
+            <div class="nav-item" onclick="openTab('support', this)">SUPPORT</div>
+            <div class="nav-item" onclick="openTab('about', this)">ABOUT</div>
+            <div class="nav-item" onclick="openTab('download', this)">DOWNLOAD</div>
+            <div class="nav-item nav-play" onclick="openTab('play', this)">TRY NOW</div>
+        </div>
+    </header>
+
+    <main>
+        <div id="game" class="content-section active">
+            <h2>Experience <span class="x-color">X</span> and <span class="o-color">O</span> Reimagined</h2>
+            <p>Welcome to the ultimate evolution of the classic pencil-and-paper grid, meticulously engineered to provide a deeply immersive, competitive tactical experience. We have deliberately stripped away the inherent, monotonous predictability found in traditional formats, opting instead to replace it with a complex ecosystem of dynamic rulesets, highly configurable scaling options, and a stunning, high-fidelity visual aesthetic crafted specifically for the modern desktop and mobile user. Every single interaction within the game engine has been rigorously refined and stress-tested to ensure maximum performance, absolute zero-latency input handling, and a seamless, stutter-free interface that responds instantly to your every command.</p>
+            
+            <img src="UI.png" alt="Main Menu UI" class="game-image">
+            
+            <h3>Core Match Modes Available:</h3>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <h4>🤖 Predictive AI Engine</h4>
+                    <p>Challenge your intellectual capacity against three distinct, dynamically adjusting difficulty tiers: Easy, Medium, or Hard. The upper-tier artificial intelligence utilizes highly specialized, recursive heuristic decision trees that actively analyze the entire spatial board state in real-time. By predicting your potential future moves, the AI proactively counters your strategic maneuvers with ruthless, high-precision efficiency, ensuring that every single match remains a unique, rigorous, and intellectually demanding experience that keeps you on your toes.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>👥 Local Pass & Play</h4>
+                    <p>Do you find yourself currently without an active or reliable internet connection? There is no need for any concern. Engage in the classic, old-school couch multiplayer experience by competing directly against a friend, family member, or companion sitting right next to you. Our platform utilizes deeply integrated, optimized local screen handling algorithms that are specifically calibrated to allow two separate players to share a single device input surface simultaneously, providing a fluid, responsive, and uninterrupted competitive environment without any input conflict or lag.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>🌐 Real-Time Cloud Rooms</h4>
+                    <p>Instantly find, connect, and match against eager, skilled challengers located anywhere across the globe. Our platform features fully automated, high-availability online matchmaking servers that track assigned player symbols and real-time board states seamlessly over high-speed internet networks. By utilizing cutting-edge, ultra-low-latency websocket protocols, we guarantee that the live game state remains perfectly synchronized with millisecond-perfect accuracy between all connected participants, providing a smooth and fair competitive atmosphere that feels as responsive as playing locally.</p>
+                </div>
+            </div>
+            <img src="Game UI.png" alt="In-Game Board View" class="game-image">
+            <p>Whether you are honing your skills against our advanced AI, enjoying a nostalgic moment with a friend in Pass & Play, or testing your mettle against the global community in our Cloud Rooms, you will find that every aspect of this interface has been crafted with a fanatical attention to detail. Our commitment is to provide a platform where strategy, speed, and precision converge, creating the most sophisticated iteration of this classic game ever conceived.</p>
+        </div>
+
+        <div id="support" class="content-section">
+            <h2>Game Rules & Technical Support</h2>
+            <p>This version of the application fundamentally breaks traditional logic by introducing a variety of unique, optional game modifiers that completely alter how the board behaves, forcing you to constantly adapt your strategy. Whether you are a casual player just looking for a quick distraction or a dedicated grid-master attempting to climb the competitive leaderboard, we encourage you to read through the following comprehensive technical manual. Mastering these core board mechanics, understanding the implications of each modifier, and learning how to anticipate their effects on your opponent’s playstyle is the key to optimizing your personal gameplay flow and achieving total dominance.</p>
+            
+            <img src="Settings.png" alt="Game Settings Configuration" class="game-image">
+            
+            <div class="rule-box">
+                <ol>
+                    <li><strong>Grid Layout Selection:</strong> While the standard match mode runs on a classic 3x3 layout designed for quick, bite-sized sessions, we have introduced a significantly tougher tactical challenge. You can now scale up your match to the complex <strong>5x5 grid</strong>. This expanded format drastically alters how you must control, defend, and attack the vital center squares, requiring a much broader, more long-term view of your strategic placement.</li>
+                    <li><strong>Victory Thresholds:</strong> In a standard 3x3 game, you must successfully link 3 matching marks in a straight horizontal, vertical, or diagonal row. However, on the expanded 5x5 grid, the victory threshold escalates accordingly to maintain the game's difficulty balance; you must now align <strong>4 marks in a row</strong> to claim the ultimate win, significantly increasing the complexity of blocking and forming lines.</li>
+                    <li><strong>The Blitz Timer Mod:</strong> Turn on this highly demanding, adrenaline-fueled mode to face a strict <strong>5-second turn clock</strong>. If you freeze and the timer hits zero, the game forcefully makes a random valid placement for you, which could ruin your entire strategy! It is high-octane pressure specifically designed for those who enjoy the thrill of having to think, adapt, and react with lightning-fast speed.</li>
+                    <li><strong>The Infinity Mod:</strong> This is a revolutionary gameplay mode where players have severely limited placement resources, changing the game from an additive challenge to a resource-management puzzle. You can only maintain a total of 3 active marks on a 3x3 board (or 4 on a 5x5). Placing a new mark forces your <strong>oldest piece to fade and vanish</strong> from existence, meaning matches never result in a stale stalemate and players must constantly prioritize which positions to hold.</li>
+                    <li><strong>Move Redo Safeties:</strong> To ensure that the game remains focused on skill rather than simple mechanical errors, all local matches support instant, multi-step Undo actions. This feature allows you to quickly and gracefully roll back accidental mistakes or poor tactical errors without losing your hard-earned progress in the current game history, encouraging bold experimental moves.</li>
+                </ol>
+            </div>
+        </div>
+
+        <div id="about" class="content-section">
+            <h2>The Developer's Technical Journey</h2>
+            <p>This project was born out of a deep-seated, obsessive exploration into software engineering best practices, UX design, and the complexities of real-time network programming. What originally began as a primitive, simple text-block script operating solely within a restricted terminal environment was refactored, iterated upon, and optimized step-by-step, module by module, into the high-performance, multi-threaded graphical application you see today. This is not just a game; it is a manifestation of an application that consistently challenges and improves upon traditional user interface design patterns, striving to provide a clean, modern, and accessible experience for every user.</p>
+            
+            <img src="Lifetime Static.png" alt="Lifetime Statistics Tracker" class="game-image">
+            
+            <h3>Behind The Code Architecture:</h3>
+            <p>The entire game runtime is written in highly modularized, clean, and maintainable <strong>Python</strong>, harnessing the powerful, cross-platform asynchronous frameworks provided by the <strong>Kivy library</strong> to power the fluid animations and render crisp, high-fidelity dark UI layers. The complex sound system operates over separate, dedicated background audio channels, allowing for sophisticated handling of ambient music loop tracking, precise spatial audio, and high-frequency, responsive UI feedback sounds that signal every action clearly. Furthermore, the networking architecture runs on lightweight, asynchronous <strong>WebSockets</strong> linking directly to a centralized, scalable cloud routing engine hosted on <strong>Render Services</strong>. This ensures that every state update package—from board placement to turn rotation—matches the server-side authorization structures precisely, providing a secure and authenticated environment for every single connected player.</p>
+        </div>
+
+        <div id="download" class="content-section">
+            <h2>Download The Latest Version</h2>
+            <p>Ready to jump into the full experience? We highly recommend downloading the latest build version to ensure you possess all the newest patches, balancing updates, performance enhancements, and server connectivity optimizations available. We are constantly iterating on the codebase to provide the smoothest experience possible. Please select your preferred platform and download the installer package below. We urge you to ensure that you have sufficient storage space available for the application files and to allow the necessary installer permissions if prompted by your operating system, as all our official builds are integrity-checked, scanned, and verified for your absolute safety.</p>
+            
+            <div class="download-grid">
+                <div class="dl-card">
+                    <h4><i class="fa-brands fa-android"></i> Android</h4>
+                    <a href="tictactoe-arm64-v8a_armeabi-v7a-debug.apk" download class="download-btn">Download Stable</a>
+                    <a href="tictactoe-arm64-v8a_armeabi-v7a-beta.apk" download class="download-btn beta-btn">Download Beta</a>
+                </div>
+                
+                <div class="dl-card">
+                    <h4><i class="fa-brands fa-windows"></i> Windows</h4>
+                    <a href="tictactoe-arm64-v8a_armeabi-v7a-windows.exe" download class="download-btn">Download Stable</a>
+                    <a href="tictactoe-arm64-v8a_armeabi-v7a-windowsbeta.exe" download class="download-btn beta-btn">Download Beta</a>
+                </div>
+
+                <div class="dl-card coming-soon">
+                    <h4><i class="fa-brands fa-apple"></i> macOS</h4>
+                    <p>Development in Progress</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="play" class="content-section">
+            <h2>Web Player Preview</h2>
+            <p>Want a taste of the action before installing? Try our embedded web-engine! This lightweight browser replica executes the exact **Medium AI** logic found in your Python file. It checks lines to claim victory or block your path before mapping its alternative choices. To experience Real-Time Cloud Matchmaking, 5x5 grids, Blitz Turn timers, and Infinity mode, download the full mobile or desktop binaries directly from the section above!</p>
+            
+            <div class="web-player-container">
+                <div id="web-status" class="web-status">YOUR TURN (X)</div>
+                <div class="web-board" id="web-board">
+                    <button class="web-cell" onclick="makeMove(0)"></button>
+                    <button class="web-cell" onclick="makeMove(1)"></button>
+                    <button class="web-cell" onclick="makeMove(2)"></button>
+                    <button class="web-cell" onclick="makeMove(3)"></button>
+                    <button class="web-cell" onclick="makeMove(4)"></button>
+                    <button class="web-cell" onclick="makeMove(5)"></button>
+                    <button class="web-cell" onclick="makeMove(6)"></button>
+                    <button class="web-cell" onclick="makeMove(7)"></button>
+                    <button class="web-cell" onclick="makeMove(8)"></button>
+                </div>
+                <div class="web-controls">
+                    <button class="web-btn" onclick="resetWebGame()">RESTART MATCH</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // --- Navigation System ---
+        function openTab(tabName, clickedElement) {
+            const contents = document.querySelectorAll('.content-section');
+            contents.forEach(content => content.classList.remove('active'));
+            const tabs = document.querySelectorAll('.nav-item');
+            tabs.forEach(tab => tab.classList.remove('active'));
+
+            document.getElementById(tabName).classList.add('active');
+            if (clickedElement) clickedElement.classList.add('active');
+        }
+
+        // --- Web Player Logic (Synchronized Medium AI Script Setup) ---
+        let webBoard = ["", "", "", "", "", "", "", "", ""];
+        let webGameOver = false;
+        const winLines = [
+            [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
+            [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columns
+            [0, 4, 8], [2, 4, 6]             // Diagonals
+        ];
+
+        function makeMove(index) {
+            if (webBoard[index] !== "" || webGameOver) return;
+            
+            // Player Placement (X)
+            webBoard[index] = "X";
+            updateWebUI();
+            
+            if (checkWebWin("X")) {
+                endWebGame("<span style='color:#31c4be'>YOU WIN!</span>");
+                return;
+            }
+            if (!webBoard.includes("")) {
+                endWebGame("<span style='color:#a8bec9'>IT'S A TIE!</span>");
+                return;
+            }
+
+            document.getElementById("web-status").innerHTML = "CPU IS THINKING...";
+            setTimeout(cpuMove, 450); // Simulates standard thread latency processing
+        }
+
+        function cpuMove() {
+            if (webGameOver) return;
+
+            let chosenIndex = -1;
+
+            // --- PYTHON MEDIUM AI LOGIC PARITY ---
+            // Iterates through symbols checking target_len - 1 structures (2 matching pieces, 1 gap)
+            // Priority 1: Check if the AI ("O") can win right now.
+            // Priority 2: Check if the Player ("X") can be blocked right now.
+            for (let symbol of ["O", "X"]) {
+                for (let line of winLines) {
+                    let v = [webBoard[line[0]], webBoard[line[1]], webBoard[line[2]]];
+                    
+                    // Filter count checking equivalents: v.count(symbol) == 2 and v.count("") == 1
+                    let symbolCount = v.filter(m => m === symbol).length;
+                    let emptyCount = v.filter(m => m === "").length;
+
+                    if (symbolCount === 2 && emptyCount === 1) {
+                        let localEmptyIndex = v.indexOf("");
+                        chosenIndex = line[localEmptyIndex];
+                        break;
+                    }
+                }
+                if (chosenIndex !== -1) break; // Break out immediately if immediate win/block target discovered
+            }
+
+            // Priority 3: Fall back to Easy AI logic (Random choice) if no immediate line trigger activated
+            if (chosenIndex === -1) {
+                let available = [];
+                for (let i = 0; i < webBoard.length; i++) {
+                    if (webBoard[i] === "") available.push(i);
+                }
+                if (available.length > 0) {
+                    chosenIndex = available[Math.floor(Math.random() * available.length)];
+                }
+            }
+
+            // Execute Chosen AI Move
+            if (chosenIndex !== -1) {
+                webBoard[chosenIndex] = "O";
+                updateWebUI();
+
+                if (checkWebWin("O")) {
+                    endWebGame("<span style='color:#f2b237'>CPU WINS!</span>");
+                    return;
+                }
+                if (!webBoard.includes("")) {
+                    endWebGame("<span style='color:#a8bec9'>IT'S A TIE!</span>");
+                    return;
+                }
+            }
+            document.getElementById("web-status").innerHTML = "YOUR TURN (X)";
+        }
+
+        function checkWebWin(symbol) {
+            let cells = document.querySelectorAll('.web-cell');
+            for (let line of winLines) {
+                if (webBoard[line[0]] === symbol && webBoard[line[1]] === symbol && webBoard[line[2]] === symbol) {
+                    cells[line[0]].classList.add("win-mark");
+                    cells[line[1]].classList.add("win-mark");
+                    cells[line[2]].classList.add("win-mark");
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function updateWebUI() {
+            let cells = document.querySelectorAll('.web-cell');
+            for (let i = 0; i < webBoard.length; i++) {
+                cells[i].innerText = webBoard[i];
+                cells[i].className = "web-cell"; 
+                if (webBoard[i] === "X") cells[i].classList.add("x-mark");
+                if (webBoard[i] === "O") cells[i].classList.add("o-mark");
+            }
+        }
+
+        function endWebGame(message) {
+            webGameOver = true;
+            document.getElementById("web-status").innerHTML = message;
+        }
+
+        function resetWebGame() {
+            webBoard = ["", "", "", "", "", "", "", "", ""];
+            webGameOver = false;
+            document.getElementById("web-status").innerHTML = "YOUR TURN (X)";
+            updateWebUI();
+        }
+    </script>
+</body>
+</html>
