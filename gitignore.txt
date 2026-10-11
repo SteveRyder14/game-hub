@@ -1,0 +1,5 @@
+*.apk
+*.exe
+__pycache__/
+venv/
+.env
