@@ -1,0 +1,8 @@
+tick_for(0.2)
+print('RELAUNCH: settings_fps=', app.settings_fps, 'Clock._max_fps=', Clock._max_fps, 'Config maxfps=', __import__('kivy.config').config.Config.get('graphics','maxfps'))
+report('persisted fps honoured at boot', app.settings_fps == 30 and abs(Clock._max_fps - 30) < 0.01)
+report('other settings persisted', app.settings_ui_style == 'MATERIAL 3' and app.settings_glass is True)
+app.start_game('local'); tick_for(0.6)
+simulate_touch(*square_center(app.board_widget, 2, 1)); tick_for(0.1)
+simulate_touch(*square_center(app.board_widget, 3, 2)); tick_for(1.0)
+report('fallback shadows: game works', app.board_state[3][2] == 1)

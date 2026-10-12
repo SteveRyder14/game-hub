@@ -596,7 +596,7 @@ h1, h2, h3, h4 {
         </div>
         <div class="rv" style="--d: 120ms">
           <p>Navy and Crimson face off on a classic board. You move your pieces forward on the dark squares and capture by jumping over your opponent. With Mandatory Jumps on, you must take a capture when one is available, so think a move ahead.</p>
-          <p>The Grandmaster Edition adds the things that make it more than a single game: an AI on three difficulty levels with a record kept for each, a four-tier campaign, a hint button for when you are stuck, and an online mode for playing other people.</p>
+          <p>The Grandmaster Edition adds the things that make it more than a single game: an AI on three difficulty levels with a record kept for each, a four-tier campaign, a hint button for when you are stuck, and an online mode for playing other people. Legal-move dots, last-move highlights and smooth piece animations keep every match easy to follow.</p>
         </div>
       </div>
     </div>
@@ -745,6 +745,14 @@ h1, h2, h3, h4 {
       <div class="panel glass rv">
         <dl class="spec">
           <div>
+            <dt>UI style</dt>
+            <dd>Choose between the clean Material 3 look (pill buttons, tonal surfaces, sentence case) and the original Classic look. Switch any time in Settings.</dd>
+          </div>
+          <div>
+            <dt>Glass effect</dt>
+            <dd>Frosted, translucent panels with a soft sheen that let the ambient background show through. Turn it off for solid Material surfaces.</dd>
+          </div>
+          <div>
             <dt>Theme</dt>
             <dd>Royal is the theme shown in these screenshots, with Navy and Crimson pieces on a classic board.</dd>
           </div>
@@ -754,7 +762,7 @@ h1, h2, h3, h4 {
           </div>
           <div>
             <dt>Visual quality</dt>
-            <dd>Set to High here. Lower it on older devices for lighter, smoother play.</dd>
+            <dd>High enables the full animation set: piece hops, capture bursts, promotion rings, ripples, confetti and the breathing background. Low keeps things flat and light for older devices.</dd>
           </div>
           <div>
             <dt>Blitz Timer</dt>
@@ -769,8 +777,8 @@ h1, h2, h3, h4 {
             <dd>On by default. When a capture is available you must take it.</dd>
           </div>
           <div>
-            <dt>Audio and performance</dt>
-            <dd>Sound and performance options are at the bottom of the Settings screen.</dd>
+            <dt>FPS target and counter</dt>
+            <dd>Cap the frame rate at 30, 60, 90 or 120 FPS to save battery, and switch on the FPS counter to see it working. Volume sliders for music and sound effects sit in the same section.</dd>
           </div>
         </dl>
       </div>
@@ -853,8 +861,8 @@ h1, h2, h3, h4 {
   "use strict";
 
   const RELEASES = {
-    tictactoe: "https://github.com/SteveRyder14/tictactoe-server/releases/tag/v1.0",
-    checkers: "https://github.com/SteveRyder14/tictactoe-server/releases/tag/v1.0", // same release page as Tic Tac Toe
+    tictactoe: "https://github.com/SteveRyder14/game-hub/releases/tag/v1.0",
+    checkers: "https://github.com/SteveRyder14/game-hub/releases/tag/v1.0", // same release page as Tic Tac Toe
   };
 
   const root = document.documentElement;

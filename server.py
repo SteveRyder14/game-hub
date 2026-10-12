@@ -12,6 +12,45 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 # Port configuration for Render
 PORT = int(os.environ.get("PORT", 8000))
 
+
+def is_closed(ws):
+    """True if a connection is closed. Works with both the legacy websockets
+    protocol objects (closed attribute) and the newer asyncio implementation."""
+    closed = getattr(ws, "closed", None)
+    if closed is not None:
+        return bool(closed)
+    state = getattr(ws, "state", None)
+    if state is not None:
+        return getattr(state, "name", "") in ("CLOSING", "CLOSED")
+    return False
+
+
+async def health_check(path, request_headers):
+    """Plain HTTP response for uptime monitors / Render health checks.
+
+    Any non-websocket GET to /health (or /) gets a 200 so a free uptime
+    pinger can keep the Render instance awake, which removes the
+    "WAKING UP SERVER..." delay players see in the apps.
+    """
+    try:
+        if path in ("/health", "/healthz", "/"):
+            upgrade = ""
+            try:
+                upgrade = request_headers.get("Upgrade", "") or ""
+            except Exception:
+                pass
+            if upgrade.lower() != "websocket":
+                body = json.dumps({
+                    "status": "ok",
+                    "tictactoe_rooms": len(ttt_rooms),
+                    "checkers_rooms": len(cb_rooms),
+                }).encode()
+                return (200, [("Content-Type", "application/json"),
+                              ("Cache-Control", "no-store")], body)
+    except Exception as e:
+        logging.warning(f"health_check error: {e}")
+    return None
+
 # =========================================================================
 # 1. TIC-TAC-TOE STATE & LOGIC
 # =========================================================================
@@ -51,7 +90,7 @@ class TicTacToeRoom:
     async def broadcast(self, payload):
         message = json.dumps(payload)
         for symbol, ws in self.players.items():
-            if not ws.closed:
+            if not is_closed(ws):
                 try:
                     await ws.send(message)
                 except Exception as e:
@@ -162,7 +201,7 @@ class TicTacToeRoom:
         self.cancel_timer()
         remaining_symbol = 'O' if self.players['X'] == disconnected_ws else 'X'
         
-        if not self.players[remaining_symbol].closed:
+        if not is_closed(self.players[remaining_symbol]):
             try:
                 await self.players[remaining_symbol].send(json.dumps({
                     "action": "opponent_disconnected",
@@ -202,7 +241,7 @@ async def tictactoe_logic(websocket):
                 opp_ws = None
                 while len(queue[opp_symbol]) > 0:
                     potential_opp = queue[opp_symbol].pop(0)
-                    if not potential_opp.closed:
+                    if not is_closed(potential_opp):
                         opp_ws = potential_opp
                         break
 
@@ -318,7 +357,7 @@ class CheckerboardRoom:
     async def broadcast(self, payload):
         message = json.dumps(payload)
         for color, ws in self.players.items():
-            if not ws.closed:
+            if not is_closed(ws):
                 try:
                     await ws.send(message)
                 except Exception as e:
@@ -332,7 +371,7 @@ class CheckerboardRoom:
         other_color = self.current_turn
         
         try:
-            if not self.players[other_color].closed:
+            if not is_closed(self.players[other_color]):
                 await self.players[other_color].send(json.dumps({
                     "action": "state_update",
                     "start": start,
@@ -361,7 +400,7 @@ class CheckerboardRoom:
             return
         self.disconnect_notified = True
 
-        if not self.players[remaining_color].closed:
+        if not is_closed(self.players[remaining_color]):
             try:
                 await self.players[remaining_color].send(json.dumps({
                     "action": "opponent_disconnected"
@@ -400,7 +439,7 @@ async def checkerboard_logic(websocket):
                 opp_ws = None
                 while len(queue[opp_color]) > 0:
                     potential_opp = queue[opp_color].pop(0)
-                    if not potential_opp.closed:
+                    if not is_closed(potential_opp):
                         opp_ws = potential_opp
                         break
 
@@ -453,6 +492,10 @@ async def checkerboard_logic(websocket):
                         room = cb_rooms[room_id]
                         await room.terminate_on_disconnect(websocket)
                         cb_rooms.pop(room_id, None)
+                        for ws_in_room in room.players.values():
+                            st = cb_player_state.get(ws_in_room)
+                            if st:
+                                st.pop("room_id", None)
                         logging.info(f"Checkerboard: Player explicitly left Room {room_id}")
 
             elif action == "leave_queue":
@@ -517,7 +560,11 @@ async def connection_router(websocket, path=None):
 # =========================================================================
 async def main():
     logging.info(f"Master Multi-Game Server booting up on port {PORT}...")
-    async with websockets.serve(connection_router, "0.0.0.0", PORT, ping_interval=60, ping_timeout=120):
+    async with websockets.serve(
+        connection_router, "0.0.0.0", PORT,
+        ping_interval=30, ping_timeout=60,
+        process_request=health_check,
+    ):
         await asyncio.Future()
 
 if __name__ == "__main__":
