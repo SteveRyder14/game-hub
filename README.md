@@ -1,55 +1,23 @@
 # UNiQ Games
 
-A browser-based game hub featuring **Tic-Tac-Toe** and **Checkers**. The site is built with HTML, CSS, and JavaScript, with a Python WebSocket server powering multiplayer Tic-Tac-Toe.
+Play **Checkers** and **Tic-Tac-Toe** on Android with the UNiQ Games APKs.
+
+## Download and install
+
+1. Open the [latest release](https://github.com/SteveRyder14/game-hub/releases/latest) on your Android device.
+2. Download the APK for the game you want to play:
+   - **Checkers:** `checkerboard-1.0-arm64-v8a_armeabi-v7a-debug.apk`
+   - **Tic-Tac-Toe:** `tictactoe-1.0-arm64-v8a_armeabi-v7a-debug.apk`
+3. Open the downloaded APK and follow Android’s installation prompts. If Android asks, allow your browser or file manager to install apps from this source.
+4. Launch the installed game from your app list.
+
+The release page includes SHA-256 checksums for both APKs.
 
 ## Games
 
-- **Tic-Tac-Toe** — play on a classic 3×3 board or a larger 5×5 board. The server supports multiplayer rooms, optional game modes, rematches, and turn timers.
-- **Checkers** — open the Checkers page from the game hub and play in your browser.
+- **Checkers** — a classic checkers game for Android.
+- **Tic-Tac-Toe** — play Tic-Tac-Toe on Android.
 
-## Run locally
+## About this repository
 
-You’ll need Python 3. Install the server dependency and start the app:
-
-```bash
-python -m pip install -r requirements.txt
-python server.py
-```
-
-The server uses the `PORT` environment variable when set, and otherwise listens on port `8000`. Open the local address for the chosen port in your browser (for example, `http://localhost:8000`).
-
-## Deploy
-
-The included `Procfile` uses this start command:
-
-```text
-web: python server.py
-```
-
-Set the deployment service’s `PORT` environment variable as required by your host.
-
-## Project structure
-
-```text
-.
-├── server.py          # Python server and WebSocket game handling
-├── requirements.txt   # Python dependencies
-├── Procfile           # Deployment start command
-└── public/
-    ├── index.html     # Game hub page
-    ├── tictactoe.html # Tic-Tac-Toe game
-    ├── checkers.html  # Checkers game
-    ├── site.js        # Shared site scripts
-    ├── style.css      # Shared styles
-    └── images/        # Game artwork and screenshots
-```
-
-## Technology
-
-- HTML, CSS, and JavaScript for the browser interface
-- Python for the server
-- [`websockets`](https://websockets.readthedocs.io/) for real-time connections
-
-## Release
-
-The repository includes the **Stable v1.0** release.
+This repository contains the game project’s source files and release builds. The APKs are available under [Releases](https://github.com/SteveRyder14/game-hub/releases).
