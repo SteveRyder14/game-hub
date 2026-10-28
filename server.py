@@ -12,6 +12,31 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 # Port configuration for Render
 PORT = int(os.environ.get("PORT", 8000))
 
+# --- Input hardening helpers (client data is never trusted) ---
+ALLOWED_BOARD_SIZES = (3, 5)
+ALLOWED_SYMBOLS = ("X", "O")
+ALLOWED_COLORS = (1, 2)
+
+
+def clamp_choice(value, allowed, default):
+    """Return value only if it is one of the allowed choices, else the default."""
+    return value if value in allowed else default
+
+
+def as_flag(value, default=0):
+    """Coerce any client value to 0/1."""
+    try:
+        return 1 if int(value) else 0
+    except (TypeError, ValueError):
+        return default
+
+
+def prune_queue(queues, queue_key):
+    """Delete a matchmaking bucket once nobody is waiting in it."""
+    bucket = queues.get(queue_key)
+    if bucket and all(len(waiting) == 0 for waiting in bucket.values()):
+        queues.pop(queue_key, None)
+
 # =========================================================================
 # 1. TIC-TAC-TOE STATE & LOGIC
 # =========================================================================
@@ -186,22 +211,33 @@ async def tictactoe_logic(websocket):
             action = data.get("action")
 
             if action == "join_queue":
-                size = data.get("board_size", 3)
-                inf = data.get("infinity", 0)
-                blitz = data.get("blitz", 0)
-                symbol = data.get("symbol", "X")
-                
+                size = clamp_choice(data.get("board_size", 3), ALLOWED_BOARD_SIZES, 3)
+                inf = as_flag(data.get("infinity", 0))
+                blitz = as_flag(data.get("blitz", 0))
+                symbol = clamp_choice(data.get("symbol", "X"), ALLOWED_SYMBOLS, "X")
+
                 queue_key = f"{size}:{inf}:{blitz}"
-                
+
                 if queue_key not in ttt_queues:
                     ttt_queues[queue_key] = {'X': [], 'O': []}
-                    
+
                 queue = ttt_queues[queue_key]
                 opp_symbol = 'O' if symbol == 'X' else 'X'
+
+                # If this socket is waiting in another queue, take it out first.
+                old_state = ttt_player_state.get(websocket)
+                if old_state and "room_id" not in old_state and old_state.get("queue_key") in ttt_queues:
+                    old_q = ttt_queues[old_state["queue_key"]]
+                    old_sym = old_state.get("symbol")
+                    if old_sym in old_q and websocket in old_q[old_sym]:
+                        old_q[old_sym].remove(websocket)
+                    prune_queue(ttt_queues, old_state["queue_key"])
 
                 opp_ws = None
                 while len(queue[opp_symbol]) > 0:
                     potential_opp = queue[opp_symbol].pop(0)
+                    if potential_opp is websocket:
+                        continue  # never match a socket against itself
                     if not potential_opp.closed:
                         opp_ws = potential_opp
                         break
@@ -240,9 +276,12 @@ async def tictactoe_logic(websocket):
                     room_id = state.get("room_id")
                     symbol = state.get("symbol")
                     index = data.get("index")
-                    
-                    if room_id and room_id in ttt_rooms and isinstance(index, int):
-                        await ttt_rooms[room_id].process_move(symbol, index)
+                    room = ttt_rooms.get(room_id) if room_id else None
+
+                    # Reject out-of-range and negative indexes (Python would
+                    # happily wrap around and corrupt the board otherwise).
+                    if room and isinstance(index, int) and 0 <= index < len(room.board):
+                        await room.process_move(symbol, index)
             
             elif action == "request_rematch":
                 state = ttt_player_state.get(websocket)
@@ -271,7 +310,8 @@ async def tictactoe_logic(websocket):
                         q = ttt_queues.get(queue_key)
                         if q and websocket in q[symbol]:
                             q[symbol].remove(websocket)
-                            logging.info(f"Tic-Tac-Toe: Player explicitly left queue '{queue_key}'")
+                        prune_queue(ttt_queues, queue_key)
+                        logging.info(f"Tic-Tac-Toe: Player explicitly left queue '{queue_key}'")
 
             elif action == "ping":
                 await websocket.send(json.dumps({"action": "pong"}))
@@ -290,6 +330,7 @@ async def tictactoe_logic(websocket):
                 q = ttt_queues.get(queue_key)
                 if q and websocket in q[symbol]:
                     q[symbol].remove(websocket)
+                prune_queue(ttt_queues, queue_key)
             
             room_id = state.get("room_id")
             if room_id and room_id in ttt_rooms:
@@ -371,9 +412,6 @@ class CheckerboardRoom:
 
 
 async def checkerboard_logic(websocket):
-    assigned_queue_key = None
-    assigned_color = None
-    
     try:
         async for msg in websocket:
             try:
@@ -384,22 +422,31 @@ async def checkerboard_logic(websocket):
             action = data.get("action")
 
             if action == "join_queue":
-                color = data.get("color", 1)
-                m_jump = data.get("mandatory_jump", True)
-                blitz = data.get("blitz", "OFF")
-                
+                color = clamp_choice(data.get("color", 1), ALLOWED_COLORS, 1)
+                m_jump = as_flag(data.get("mandatory_jump", 1))
+                blitz = as_flag(data.get("blitz", 0))
+
                 queue_key = f"{m_jump}:{blitz}"
                 if queue_key not in cb_queues:
                     cb_queues[queue_key] = {1: [], 2: []}
-                    
-                assigned_queue_key = queue_key
-                assigned_color = color
+
                 opp_color = 2 if color == 1 else 1
                 queue = cb_queues[queue_key]
-                
+
+                # If this socket is waiting in another queue, take it out first.
+                old_state = cb_player_state.get(websocket)
+                if old_state and "room_id" not in old_state and old_state.get("queue_key") in cb_queues:
+                    old_q = cb_queues[old_state["queue_key"]]
+                    old_color = old_state.get("color")
+                    if old_color in old_q and websocket in old_q[old_color]:
+                        old_q[old_color].remove(websocket)
+                    prune_queue(cb_queues, old_state["queue_key"])
+
                 opp_ws = None
                 while len(queue[opp_color]) > 0:
                     potential_opp = queue[opp_color].pop(0)
+                    if potential_opp is websocket:
+                        continue  # never match a socket against itself
                     if not potential_opp.closed:
                         opp_ws = potential_opp
                         break
@@ -409,10 +456,10 @@ async def checkerboard_logic(websocket):
                     room_id = str(uuid.uuid4())
                     new_room = CheckerboardRoom(room_id, my_ws if color==1 else opp_ws, my_ws if color==2 else opp_ws)
                     cb_rooms[room_id] = new_room
-                    
+
                     cb_player_state[my_ws] = {"room_id": room_id, "color": color, "queue_key": queue_key}
                     cb_player_state[opp_ws] = {"room_id": room_id, "color": opp_color, "queue_key": queue_key}
-                    
+
                     try:
                         await my_ws.send(json.dumps({"action": "match_start", "color": color}))
                         await opp_ws.send(json.dumps({"action": "match_start", "color": opp_color}))
@@ -464,7 +511,8 @@ async def checkerboard_logic(websocket):
                         q = cb_queues.get(queue_key)
                         if q and websocket in q[color]:
                             q[color].remove(websocket)
-                            logging.info(f"Checkerboard: Player explicitly left queue '{queue_key}'")
+                        prune_queue(cb_queues, queue_key)
+                        logging.info(f"Checkerboard: Player explicitly left queue '{queue_key}'")
 
             elif action == "ping":
                 await websocket.send(json.dumps({"action": "pong"}))
@@ -483,6 +531,7 @@ async def checkerboard_logic(websocket):
                 q = cb_queues.get(queue_key)
                 if q and websocket in q[color]:
                     q[color].remove(websocket)
+                prune_queue(cb_queues, queue_key)
             
             room_id = state.get("room_id")
             if room_id and room_id in cb_rooms:
@@ -502,7 +551,12 @@ async def connection_router(websocket, path=None):
     else:
         req_path = path or getattr(websocket, 'path', '/')
         
-    logging.info(f"Incoming connection to: {req_path}")
+    if req_path != "/tictactoe" and req_path != "/checkerboard":
+        logging.warning(f"Rejected unauthorized path: {req_path}")
+        await websocket.close(code=1008, reason="Invalid game path requested.")
+        return
+    
+    logging.debug(f"Incoming connection to: {req_path}")
     
     if req_path == "/tictactoe":
         await tictactoe_logic(websocket)
